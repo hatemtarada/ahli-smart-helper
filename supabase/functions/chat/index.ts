@@ -22,7 +22,6 @@ serve(async (req) => {
     if (action === 'book_appointment' && actionData && userId) {
       const { doctor_id, department_id, appointment_date, appointment_time } = actionData;
       
-      // Check if slot is already taken
       const { data: existing } = await supabase
         .from('appointments')
         .select('id')
@@ -90,7 +89,6 @@ serve(async (req) => {
     if (action === 'get_available_slots') {
       const { doctor_id, date } = actionData;
       
-      // Get booked appointments for this doctor on this date
       const { data: booked } = await supabase
         .from('appointments')
         .select('appointment_time')
@@ -100,7 +98,6 @@ serve(async (req) => {
 
       const bookedTimes = new Set((booked || []).map(a => a.appointment_time));
       
-      // Generate standard time slots (8 AM to 3 PM, 30-min intervals)
       const slots: string[] = [];
       for (let h = 8; h <= 15; h++) {
         for (const m of ['00', '30']) {
@@ -117,18 +114,34 @@ serve(async (req) => {
       });
     }
 
-    // Regular chat - AI response
-    const systemPrompt = `أنت المساعد الذكي للمستشفى الأهلي في الخليل - فلسطين. أجب على أسئلة المرضى والزوار بشكل ودود ومفيد.
+    // Regular chat - AI response (HOSPITAL-ONLY)
+    const systemPrompt = `أنت المساعد الذكي الرسمي للمستشفى الأهلي في مدينة الخليل - فلسطين.
 
+## دورك:
+أنت مساعد متخصص فقط وحصرياً بالمستشفى الأهلي وخدماته. لا تجيب على أي أسئلة خارج نطاق المستشفى.
+
+## البيانات المتاحة لك:
 ${context || ''}
 
-تعليمات مهمة:
-- أجب باللغة العربية دائماً إلا إذا سألك المستخدم بالإنجليزية
-- كن ودوداً ومختصراً
-- إذا لم تعرف الإجابة، اقترح الاتصال بالمستشفى على الرقم 0097022224555
-- ساعد المرضى في معرفة الأقسام والأطباء والخدمات
-- إذا أراد المريض حجز موعد، أخبره أن يضغط على زر "حجز موعد" في القائمة السريعة أو يكتب "أريد حجز موعد"
-- وجه المرضى لحجز المواعيد من خلال بوابة المريض أو الشات بوت`;
+## قواعد صارمة يجب اتباعها:
+1. أجب فقط على الأسئلة المتعلقة بالمستشفى الأهلي: الأقسام، الأطباء، الخدمات، المواعيد، الموقع، ساعات العمل، التواصل، التأمين، وأي شيء يخص المستشفى.
+2. إذا سألك أحد سؤالاً لا علاقة له بالمستشفى (مثل: أسئلة عامة، برمجة، طبخ، رياضة، سياسة، أخبار، ألعاب، أو أي موضوع آخر)، أجب بأدب:
+   - بالعربية: "عذراً، أنا المساعد الذكي للمستشفى الأهلي فقط. يمكنني مساعدتك في أي استفسار يخص المستشفى كالأقسام والأطباء والمواعيد والخدمات. كيف يمكنني مساعدتك؟"
+   - بالإنجليزية: "Sorry, I'm the Al-Ahli Hospital virtual assistant only. I can help you with hospital inquiries such as departments, doctors, appointments, and services. How can I help you?"
+3. أجب باللغة العربية دائماً إلا إذا سألك المستخدم بالإنجليزية.
+4. كن ودوداً ومختصراً ومهنياً.
+5. إذا لم تعرف إجابة سؤال يخص المستشفى، اقترح الاتصال بالمستشفى على الرقم 0097022224555 أو البريد info@ahli.org.
+6. إذا أراد المريض حجز موعد، أخبره أن يضغط على زر "حجز موعد" في القائمة السريعة أو يكتب "أريد حجز موعد".
+7. لا تخترع معلومات غير موجودة في البيانات المتاحة لك.
+
+## معلومات المستشفى الأساسية:
+- الاسم: المستشفى الأهلي - الخليل
+- الهاتف: 0097022224555
+- الفاكس: 0097222229247
+- البريد: info@ahli.org
+- الموقع: الخليل، فلسطين
+- الطوارئ: 24 ساعة / 7 أيام
+- العيادات: 8:00 صباحاً - 3:00 مساءً`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -149,6 +162,11 @@ ${context || ''}
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Payment required" }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
