@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Plus, Trash2 } from 'lucide-react';
+import ImageUpload from './ImageUpload';
 
 const AdminInvoices = () => {
   const { lang } = useI18n();
@@ -20,6 +21,7 @@ const AdminInvoices = () => {
     paid_amount: '',
     due_date: '',
     status: 'unpaid',
+    image_url: '',
   });
 
   const { data: patients } = useQuery({
@@ -47,13 +49,14 @@ const AdminInvoices = () => {
         paid_amount: parseFloat(form.paid_amount) || 0,
         due_date: form.due_date || null,
         status: form.status,
+        image_url: form.image_url || '',
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
       setOpen(false);
-      setForm({ patient_id: '', invoice_number: '', total_amount: '', paid_amount: '', due_date: '', status: 'unpaid' });
+      setForm({ patient_id: '', invoice_number: '', total_amount: '', paid_amount: '', due_date: '', status: 'unpaid', image_url: '' });
       toast.success(lang === 'ar' ? 'تمت الإضافة' : 'Added');
     },
     onError: () => toast.error(lang === 'ar' ? 'حدث خطأ' : 'Error'),
@@ -81,12 +84,6 @@ const AdminInvoices = () => {
     },
   });
 
-  const statusColor = (s: string) => {
-    if (s === 'paid') return 'text-green-600';
-    if (s === 'partial') return 'text-yellow-600';
-    return 'text-destructive';
-  };
-
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -95,7 +92,7 @@ const AdminInvoices = () => {
           <DialogTrigger asChild>
             <Button size="sm"><Plus className="w-4 h-4 me-1" />{lang === 'ar' ? 'إضافة فاتورة' : 'Add Invoice'}</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{lang === 'ar' ? 'إضافة فاتورة' : 'Add Invoice'}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <Select value={form.patient_id} onValueChange={v => setForm(f => ({ ...f, patient_id: v }))}>
@@ -121,6 +118,10 @@ const AdminInvoices = () => {
                   <SelectItem value="paid">{lang === 'ar' ? 'مدفوعة' : 'Paid'}</SelectItem>
                 </SelectContent>
               </Select>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">{lang === 'ar' ? 'صورة الفاتورة' : 'Invoice Image'}</label>
+                <ImageUpload value={form.image_url} onChange={url => setForm(f => ({ ...f, image_url: url }))} folder="invoices" />
+              </div>
               <Button onClick={() => addMutation.mutate()} disabled={!form.patient_id || !form.invoice_number.trim() || addMutation.isPending} className="w-full">
                 {addMutation.isPending ? '...' : (lang === 'ar' ? 'إضافة' : 'Add')}
               </Button>
@@ -131,13 +132,18 @@ const AdminInvoices = () => {
       <div className="space-y-2">
         {invoices?.map((inv: any) => (
           <div key={inv.id} className="bg-card rounded-lg border border-border p-3 flex flex-wrap gap-3 justify-between items-center">
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground text-sm">#{inv.invoice_number}</p>
-              <p className="text-xs text-primary">{patients?.find((p: any) => p.user_id === inv.patient_id)?.full_name || inv.patient_id?.slice(0, 8)}</p>
-              <p className="text-xs text-muted-foreground">
-                {lang === 'ar' ? 'الإجمالي' : 'Total'}: {inv.total_amount} | {lang === 'ar' ? 'المدفوع' : 'Paid'}: {inv.paid_amount}
-              </p>
-              {inv.due_date && <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'الاستحقاق' : 'Due'}: {inv.due_date}</p>}
+            <div className="flex gap-3 flex-1 min-w-0">
+              {inv.image_url && (
+                <img src={inv.image_url} alt="" className="w-14 h-14 object-cover rounded-md border border-border" />
+              )}
+              <div>
+                <p className="font-medium text-foreground text-sm">#{inv.invoice_number}</p>
+                <p className="text-xs text-primary">{patients?.find((p: any) => p.user_id === inv.patient_id)?.full_name || inv.patient_id?.slice(0, 8)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {lang === 'ar' ? 'الإجمالي' : 'Total'}: {inv.total_amount} | {lang === 'ar' ? 'المدفوع' : 'Paid'}: {inv.paid_amount}
+                </p>
+                {inv.due_date && <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'الاستحقاق' : 'Due'}: {inv.due_date}</p>}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Select value={inv.status} onValueChange={v => updateStatus.mutate({ id: inv.id, status: v })}>

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Plus, Trash2 } from 'lucide-react';
+import ImageUpload from './ImageUpload';
 
 const AdminLabTests = () => {
   const { lang } = useI18n();
@@ -23,6 +24,7 @@ const AdminLabTests = () => {
     result_date: '',
     status: 'pending',
     notes: '',
+    image_url: '',
   });
 
   const { data: patients } = useQuery({
@@ -52,13 +54,14 @@ const AdminLabTests = () => {
         result_date: form.result_date || null,
         status: form.status,
         notes: form.notes.trim() || null,
+        image_url: form.image_url || '',
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-labtests'] });
       setOpen(false);
-      setForm({ patient_id: '', test_name_ar: '', test_name_en: '', test_date: '', result: '', result_date: '', status: 'pending', notes: '' });
+      setForm({ patient_id: '', test_name_ar: '', test_name_en: '', test_date: '', result: '', result_date: '', status: 'pending', notes: '', image_url: '' });
       toast.success(lang === 'ar' ? 'تمت الإضافة' : 'Added');
     },
     onError: () => toast.error(lang === 'ar' ? 'حدث خطأ' : 'Error'),
@@ -85,15 +88,6 @@ const AdminLabTests = () => {
       toast.success(lang === 'ar' ? 'تم الحذف' : 'Deleted');
     },
   });
-
-  const statusLabel = (s: string) => {
-    const map: Record<string, Record<string, string>> = {
-      pending: { ar: 'قيد الانتظار', en: 'Pending' },
-      in_progress: { ar: 'جارٍ', en: 'In Progress' },
-      completed: { ar: 'مكتمل', en: 'Completed' },
-    };
-    return map[s]?.[lang] || s;
-  };
 
   return (
     <div>
@@ -126,6 +120,10 @@ const AdminLabTests = () => {
                 <Input type="date" value={form.result_date} onChange={e => setForm(f => ({ ...f, result_date: e.target.value }))} />
               </div>
               <Textarea placeholder={lang === 'ar' ? 'ملاحظات (اختياري)' : 'Notes (optional)'} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">{lang === 'ar' ? 'صورة الفحص' : 'Test Image'}</label>
+                <ImageUpload value={form.image_url} onChange={url => setForm(f => ({ ...f, image_url: url }))} folder="lab-tests" />
+              </div>
               <Button onClick={() => addMutation.mutate()} disabled={!form.patient_id || !form.test_name_ar.trim() || addMutation.isPending} className="w-full">
                 {addMutation.isPending ? '...' : (lang === 'ar' ? 'إضافة' : 'Add')}
               </Button>
@@ -136,12 +134,17 @@ const AdminLabTests = () => {
       <div className="space-y-2">
         {labTests?.map((test: any) => (
           <div key={test.id} className="bg-card rounded-lg border border-border p-3 flex flex-wrap gap-3 justify-between items-center">
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground text-sm">{test.test_name_ar}</p>
-              <p className="text-xs text-muted-foreground">{test.test_name_en}</p>
-              <p className="text-xs text-primary">{patients?.find((p: any) => p.user_id === test.patient_id)?.full_name || test.patient_id?.slice(0, 8)}</p>
-              <p className="text-xs text-muted-foreground">{test.test_date}</p>
-              {test.result && <p className="text-xs text-accent-foreground mt-1">📋 {test.result}</p>}
+            <div className="flex gap-3 flex-1 min-w-0">
+              {test.image_url && (
+                <img src={test.image_url} alt="" className="w-14 h-14 object-cover rounded-md border border-border" />
+              )}
+              <div>
+                <p className="font-medium text-foreground text-sm">{test.test_name_ar}</p>
+                <p className="text-xs text-muted-foreground">{test.test_name_en}</p>
+                <p className="text-xs text-primary">{patients?.find((p: any) => p.user_id === test.patient_id)?.full_name || test.patient_id?.slice(0, 8)}</p>
+                <p className="text-xs text-muted-foreground">{test.test_date}</p>
+                {test.result && <p className="text-xs text-accent-foreground mt-1">📋 {test.result}</p>}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Select value={test.status} onValueChange={v => updateStatus.mutate({ id: test.id, status: v })}>

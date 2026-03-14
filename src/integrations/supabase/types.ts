@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          content_ar: string
+          content_en: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          priority: number
+          title_ar: string
+          title_en: string
+          updated_at: string
+        }
+        Insert: {
+          content_ar?: string
+          content_en?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          priority?: number
+          title_ar: string
+          title_en?: string
+          updated_at?: string
+        }
+        Update: {
+          content_ar?: string
+          content_en?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          priority?: number
+          title_ar?: string
+          title_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           appointment_date: string
@@ -298,6 +337,7 @@ export type Database = {
           created_at: string
           due_date: string | null
           id: string
+          image_url: string | null
           invoice_number: string
           paid_amount: number
           patient_id: string
@@ -308,6 +348,7 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           id?: string
+          image_url?: string | null
           invoice_number: string
           paid_amount?: number
           patient_id: string
@@ -318,6 +359,7 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           id?: string
+          image_url?: string | null
           invoice_number?: string
           paid_amount?: number
           patient_id?: string
@@ -357,6 +399,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
           notes: string | null
           patient_id: string
           result: string | null
@@ -369,6 +412,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
           notes?: string | null
           patient_id: string
           result?: string | null
@@ -381,6 +425,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
           notes?: string | null
           patient_id?: string
           result?: string | null
