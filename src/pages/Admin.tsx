@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Building2, Stethoscope, Calendar, TestTube, FileText, MessageSquare, Plus, Trash2, Pencil, LayoutDashboard } from 'lucide-react';
+import AdminLabTests from '@/components/admin/AdminLabTests';
+import AdminInvoicesComponent from '@/components/admin/AdminInvoices';
 
 const AdminDashboard = () => {
   const { t, lang } = useI18n();
@@ -40,7 +42,7 @@ const AdminDashboard = () => {
           <TabsContent value="doctors"><AdminDoctors /></TabsContent>
           <TabsContent value="appointments"><AdminAppointments /></TabsContent>
           <TabsContent value="labtests"><AdminLabTests /></TabsContent>
-          <TabsContent value="invoices"><AdminInvoices /></TabsContent>
+          <TabsContent value="invoices"><AdminInvoicesComponent /></TabsContent>
           <TabsContent value="feedback"><AdminFeedback /></TabsContent>
         </Tabs>
       </div>
@@ -271,15 +273,7 @@ const AdminAppointments = () => {
   );
 };
 
-const AdminLabTests = () => {
-  const { lang } = useI18n();
-  return <p className="text-muted-foreground text-center py-8">{lang === 'ar' ? 'إدارة الفحوصات المخبرية - قريباً' : 'Lab test management - Coming soon'}</p>;
-};
-
-const AdminInvoices = () => {
-  const { lang } = useI18n();
-  return <p className="text-muted-foreground text-center py-8">{lang === 'ar' ? 'إدارة الفواتير - قريباً' : 'Invoice management - Coming soon'}</p>;
-};
+// AdminLabTests and AdminInvoices moved to src/components/admin/
 
 const AdminFeedback = () => {
   const { lang } = useI18n();
