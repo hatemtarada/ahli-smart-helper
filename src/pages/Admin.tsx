@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Building2, Stethoscope, Calendar, TestTube, FileText, MessageSquare, Plus, Trash2, Pencil, LayoutDashboard } from 'lucide-react';
+import AdminLabTests from '@/components/admin/AdminLabTests';
+import AdminInvoicesComponent from '@/components/admin/AdminInvoices';
 
 const AdminDashboard = () => {
   const { t, lang } = useI18n();
