@@ -139,7 +139,7 @@ const AdminLabTests = () => {
             <div className="flex-1 min-w-0">
               <p className="font-medium text-foreground text-sm">{test.test_name_ar}</p>
               <p className="text-xs text-muted-foreground">{test.test_name_en}</p>
-              <p className="text-xs text-primary">{test.profiles?.full_name || test.patient_id?.slice(0, 8)}</p>
+              <p className="text-xs text-primary">{patients?.find((p: any) => p.user_id === test.patient_id)?.full_name || test.patient_id?.slice(0, 8)}</p>
               <p className="text-xs text-muted-foreground">{test.test_date}</p>
               {test.result && <p className="text-xs text-accent-foreground mt-1">📋 {test.result}</p>}
             </div>

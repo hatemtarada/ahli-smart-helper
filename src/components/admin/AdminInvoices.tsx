@@ -133,7 +133,7 @@ const AdminInvoices = () => {
           <div key={inv.id} className="bg-card rounded-lg border border-border p-3 flex flex-wrap gap-3 justify-between items-center">
             <div className="flex-1 min-w-0">
               <p className="font-medium text-foreground text-sm">#{inv.invoice_number}</p>
-              <p className="text-xs text-primary">{inv.profiles?.full_name || inv.patient_id?.slice(0, 8)}</p>
+              <p className="text-xs text-primary">{patients?.find((p: any) => p.user_id === inv.patient_id)?.full_name || inv.patient_id?.slice(0, 8)}</p>
               <p className="text-xs text-muted-foreground">
                 {lang === 'ar' ? 'الإجمالي' : 'Total'}: {inv.total_amount} | {lang === 'ar' ? 'المدفوع' : 'Paid'}: {inv.paid_amount}
               </p>
