@@ -42,7 +42,7 @@ const AdminDashboard = () => {
           <TabsContent value="doctors"><AdminDoctors /></TabsContent>
           <TabsContent value="appointments"><AdminAppointments /></TabsContent>
           <TabsContent value="labtests"><AdminLabTests /></TabsContent>
-          <TabsContent value="invoices"><AdminInvoices /></TabsContent>
+          <TabsContent value="invoices"><AdminInvoicesComponent /></TabsContent>
           <TabsContent value="feedback"><AdminFeedback /></TabsContent>
         </Tabs>
       </div>
