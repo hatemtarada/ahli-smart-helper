@@ -273,15 +273,7 @@ const AdminAppointments = () => {
   );
 };
 
-const AdminLabTests = () => {
-  const { lang } = useI18n();
-  return <p className="text-muted-foreground text-center py-8">{lang === 'ar' ? 'إدارة الفحوصات المخبرية - قريباً' : 'Lab test management - Coming soon'}</p>;
-};
-
-const AdminInvoices = () => {
-  const { lang } = useI18n();
-  return <p className="text-muted-foreground text-center py-8">{lang === 'ar' ? 'إدارة الفواتير - قريباً' : 'Invoice management - Coming soon'}</p>;
-};
+// AdminLabTests and AdminInvoices moved to src/components/admin/
 
 const AdminFeedback = () => {
   const { lang } = useI18n();
