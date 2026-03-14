@@ -36,16 +36,8 @@ const AdminLabTests = () => {
   const { data: labTests } = useQuery({
     queryKey: ['admin-labtests'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('lab_tests')
-        .select('*, profiles!lab_tests_patient_id_fkey(full_name)')
-        .order('created_at', { ascending: false });
-      // If join fails, fetch without join
-      if (!data) {
-        const { data: raw } = await supabase.from('lab_tests').select('*').order('created_at', { ascending: false });
-        return raw || [];
-      }
-      return data;
+      const { data } = await supabase.from('lab_tests').select('*').order('created_at', { ascending: false });
+      return data || [];
     },
   });
 

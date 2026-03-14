@@ -33,15 +33,8 @@ const AdminInvoices = () => {
   const { data: invoices } = useQuery({
     queryKey: ['admin-invoices'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('invoices')
-        .select('*, profiles!invoices_patient_id_fkey(full_name)')
-        .order('created_at', { ascending: false });
-      if (!data) {
-        const { data: raw } = await supabase.from('invoices').select('*').order('created_at', { ascending: false });
-        return raw || [];
-      }
-      return data;
+      const { data } = await supabase.from('invoices').select('*').order('created_at', { ascending: false });
+      return data || [];
     },
   });
 
