@@ -11,9 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Building2, Stethoscope, Calendar, TestTube, FileText, MessageSquare, Plus, Trash2, Pencil, LayoutDashboard } from 'lucide-react';
+import { Building2, Stethoscope, Calendar, TestTube, FileText, MessageSquare, Plus, Trash2, LayoutDashboard, Megaphone } from 'lucide-react';
 import AdminLabTests from '@/components/admin/AdminLabTests';
 import AdminInvoicesComponent from '@/components/admin/AdminInvoices';
+import AdminAnnouncements from '@/components/admin/AdminAnnouncements';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 const AdminDashboard = () => {
   const { t, lang } = useI18n();
@@ -36,6 +38,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="appointments" className="gap-1"><Calendar className="w-4 h-4" />{t('admin.manageAppointments')}</TabsTrigger>
             <TabsTrigger value="labtests" className="gap-1"><TestTube className="w-4 h-4" />{t('admin.manageLabTests')}</TabsTrigger>
             <TabsTrigger value="invoices" className="gap-1"><FileText className="w-4 h-4" />{t('admin.manageInvoices')}</TabsTrigger>
+            <TabsTrigger value="announcements" className="gap-1"><Megaphone className="w-4 h-4" />{lang === 'ar' ? 'الأخبار' : 'News'}</TabsTrigger>
             <TabsTrigger value="feedback" className="gap-1"><MessageSquare className="w-4 h-4" />{t('admin.manageFeedback')}</TabsTrigger>
           </TabsList>
           <TabsContent value="departments"><AdminDepartments /></TabsContent>
@@ -43,6 +46,7 @@ const AdminDashboard = () => {
           <TabsContent value="appointments"><AdminAppointments /></TabsContent>
           <TabsContent value="labtests"><AdminLabTests /></TabsContent>
           <TabsContent value="invoices"><AdminInvoicesComponent /></TabsContent>
+          <TabsContent value="announcements"><AdminAnnouncements /></TabsContent>
           <TabsContent value="feedback"><AdminFeedback /></TabsContent>
         </Tabs>
       </div>
@@ -54,7 +58,7 @@ const AdminDepartments = () => {
   const { lang } = useI18n();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name_ar: '', name_en: '', description_ar: '', description_en: '' });
+  const [form, setForm] = useState({ name_ar: '', name_en: '', description_ar: '', description_en: '', image_url: '' });
 
   const { data: departments } = useQuery({
     queryKey: ['admin-departments'],
@@ -71,13 +75,14 @@ const AdminDepartments = () => {
         name_en: form.name_en.trim(),
         description_ar: form.description_ar.trim(),
         description_en: form.description_en.trim(),
+        image_url: form.image_url || '',
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-departments'] });
       setOpen(false);
-      setForm({ name_ar: '', name_en: '', description_ar: '', description_en: '' });
+      setForm({ name_ar: '', name_en: '', description_ar: '', description_en: '', image_url: '' });
       toast.success(lang === 'ar' ? 'تمت الإضافة' : 'Added');
     },
     onError: () => toast.error(lang === 'ar' ? 'حدث خطأ' : 'Error'),
@@ -100,13 +105,17 @@ const AdminDepartments = () => {
         <h2 className="font-bold text-foreground">{lang === 'ar' ? 'الأقسام' : 'Departments'} ({departments?.length || 0})</h2>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 me-1" />{lang === 'ar' ? 'إضافة قسم' : 'Add Department'}</Button></DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{lang === 'ar' ? 'إضافة قسم' : 'Add Department'}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <Input placeholder={lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'} value={form.name_ar} onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))} />
               <Input placeholder={lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'} value={form.name_en} onChange={e => setForm(f => ({ ...f, name_en: e.target.value }))} />
               <Textarea placeholder={lang === 'ar' ? 'الوصف (عربي)' : 'Description (Arabic)'} value={form.description_ar} onChange={e => setForm(f => ({ ...f, description_ar: e.target.value }))} />
               <Textarea placeholder={lang === 'ar' ? 'الوصف (إنجليزي)' : 'Description (English)'} value={form.description_en} onChange={e => setForm(f => ({ ...f, description_en: e.target.value }))} />
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">{lang === 'ar' ? 'صورة القسم' : 'Department Image'}</label>
+                <ImageUpload value={form.image_url} onChange={url => setForm(f => ({ ...f, image_url: url }))} folder="departments" />
+              </div>
               <Button onClick={() => addMutation.mutate()} disabled={!form.name_ar.trim() || addMutation.isPending} className="w-full">
                 {addMutation.isPending ? '...' : (lang === 'ar' ? 'إضافة' : 'Add')}
               </Button>
@@ -117,9 +126,12 @@ const AdminDepartments = () => {
       <div className="space-y-2">
         {departments?.map((dept: any) => (
           <div key={dept.id} className="bg-card rounded-lg border border-border p-3 flex justify-between items-center">
-            <div>
-              <p className="font-medium text-foreground text-sm">{dept.name_ar}</p>
-              <p className="text-xs text-muted-foreground">{dept.name_en}</p>
+            <div className="flex gap-3">
+              {dept.image_url && <img src={dept.image_url} alt="" className="w-12 h-12 object-cover rounded-md border border-border" />}
+              <div>
+                <p className="font-medium text-foreground text-sm">{dept.name_ar}</p>
+                <p className="text-xs text-muted-foreground">{dept.name_en}</p>
+              </div>
             </div>
             <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteMutation.mutate(dept.id)}>
               <Trash2 className="w-4 h-4" />
@@ -135,7 +147,7 @@ const AdminDoctors = () => {
   const { lang } = useI18n();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name_ar: '', name_en: '', specialty_ar: '', specialty_en: '', department_id: '' });
+  const [form, setForm] = useState({ name_ar: '', name_en: '', specialty_ar: '', specialty_en: '', department_id: '', image_url: '' });
 
   const { data: departments } = useQuery({
     queryKey: ['admin-departments'],
@@ -161,13 +173,14 @@ const AdminDoctors = () => {
         specialty_ar: form.specialty_ar.trim(),
         specialty_en: form.specialty_en.trim(),
         department_id: form.department_id || null,
+        image_url: form.image_url || '',
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-doctors'] });
       setOpen(false);
-      setForm({ name_ar: '', name_en: '', specialty_ar: '', specialty_en: '', department_id: '' });
+      setForm({ name_ar: '', name_en: '', specialty_ar: '', specialty_en: '', department_id: '', image_url: '' });
       toast.success(lang === 'ar' ? 'تمت الإضافة' : 'Added');
     },
   });
@@ -189,7 +202,7 @@ const AdminDoctors = () => {
         <h2 className="font-bold text-foreground">{lang === 'ar' ? 'الأطباء' : 'Doctors'} ({doctors?.length || 0})</h2>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button size="sm"><Plus className="w-4 h-4 me-1" />{lang === 'ar' ? 'إضافة طبيب' : 'Add Doctor'}</Button></DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{lang === 'ar' ? 'إضافة طبيب' : 'Add Doctor'}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <Input placeholder={lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'} value={form.name_ar} onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))} />
@@ -202,6 +215,10 @@ const AdminDoctors = () => {
                   {departments?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name_ar}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">{lang === 'ar' ? 'صورة الطبيب' : 'Doctor Photo'}</label>
+                <ImageUpload value={form.image_url} onChange={url => setForm(f => ({ ...f, image_url: url }))} folder="doctors" />
+              </div>
               <Button onClick={() => addMutation.mutate()} disabled={!form.name_ar.trim() || addMutation.isPending} className="w-full">
                 {addMutation.isPending ? '...' : (lang === 'ar' ? 'إضافة' : 'Add')}
               </Button>
@@ -212,10 +229,13 @@ const AdminDoctors = () => {
       <div className="space-y-2">
         {doctors?.map((doc: any) => (
           <div key={doc.id} className="bg-card rounded-lg border border-border p-3 flex justify-between items-center">
-            <div>
-              <p className="font-medium text-foreground text-sm">{doc.name_ar}</p>
-              <p className="text-xs text-primary">{doc.specialty_ar}</p>
-              <p className="text-xs text-muted-foreground">{doc.departments?.name_ar || ''}</p>
+            <div className="flex gap-3">
+              {doc.image_url && <img src={doc.image_url} alt="" className="w-12 h-12 object-cover rounded-full border border-border" />}
+              <div>
+                <p className="font-medium text-foreground text-sm">{doc.name_ar}</p>
+                <p className="text-xs text-primary">{doc.specialty_ar}</p>
+                <p className="text-xs text-muted-foreground">{doc.departments?.name_ar || ''}</p>
+              </div>
             </div>
             <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteMutation.mutate(doc.id)}>
               <Trash2 className="w-4 h-4" />
@@ -272,8 +292,6 @@ const AdminAppointments = () => {
     </div>
   );
 };
-
-// AdminLabTests and AdminInvoices moved to src/components/admin/
 
 const AdminFeedback = () => {
   const { lang } = useI18n();

@@ -114,6 +114,18 @@ serve(async (req) => {
       });
     }
 
+    // Fetch active announcements to include in chatbot context
+    const { data: announcements } = await supabase
+      .from('announcements')
+      .select('title_ar, title_en, content_ar, content_en')
+      .eq('is_active', true)
+      .order('priority', { ascending: false })
+      .limit(20);
+
+    const announcementsContext = announcements && announcements.length > 0
+      ? `\n\n## آخر الأخبار والإعلانات:\n${announcements.map((a, i) => `${i + 1}. ${a.title_ar}: ${a.content_ar}`).join('\n')}`
+      : '';
+
     // Regular chat - AI response (HOSPITAL-ONLY)
     const systemPrompt = `أنت المساعد الذكي الرسمي للمستشفى الأهلي في مدينة الخليل - فلسطين.
 
@@ -122,9 +134,10 @@ serve(async (req) => {
 
 ## البيانات المتاحة لك:
 ${context || ''}
+${announcementsContext}
 
 ## قواعد صارمة يجب اتباعها:
-1. أجب فقط على الأسئلة المتعلقة بالمستشفى الأهلي: الأقسام، الأطباء، الخدمات، المواعيد، الموقع، ساعات العمل، التواصل، التأمين، وأي شيء يخص المستشفى.
+1. أجب فقط على الأسئلة المتعلقة بالمستشفى الأهلي: الأقسام، الأطباء، الخدمات، المواعيد، الموقع، ساعات العمل، التواصل، التأمين، الأخبار والإعلانات، وأي شيء يخص المستشفى.
 2. إذا سألك أحد سؤالاً لا علاقة له بالمستشفى (مثل: أسئلة عامة، برمجة، طبخ، رياضة، سياسة، أخبار، ألعاب، أو أي موضوع آخر)، أجب بأدب:
    - بالعربية: "عذراً، أنا المساعد الذكي للمستشفى الأهلي فقط. يمكنني مساعدتك في أي استفسار يخص المستشفى كالأقسام والأطباء والمواعيد والخدمات. كيف يمكنني مساعدتك؟"
    - بالإنجليزية: "Sorry, I'm the Al-Ahli Hospital virtual assistant only. I can help you with hospital inquiries such as departments, doctors, appointments, and services. How can I help you?"
@@ -133,6 +146,7 @@ ${context || ''}
 5. إذا لم تعرف إجابة سؤال يخص المستشفى، اقترح الاتصال بالمستشفى على الرقم 0097022224555 أو البريد info@ahli.org.
 6. إذا أراد المريض حجز موعد، أخبره أن يضغط على زر "حجز موعد" في القائمة السريعة أو يكتب "أريد حجز موعد".
 7. لا تخترع معلومات غير موجودة في البيانات المتاحة لك.
+8. إذا سأل المستخدم عن الأخبار أو الإعلانات أو آخر المستجدات، استخدم قسم "آخر الأخبار والإعلانات" للإجابة.
 
 ## معلومات المستشفى الأساسية:
 - الاسم: المستشفى الأهلي - الخليل
