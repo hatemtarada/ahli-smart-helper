@@ -3,7 +3,7 @@ import { useI18n } from '@/lib/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Heart, Activity, Users, TestTube, Zap, Baby, Building2, Stethoscope, Shield, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Heart, Activity, Users, TestTube, Zap, Baby, Building2, Stethoscope, Shield, Clock, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const stats = [
@@ -37,6 +37,14 @@ const HomePage = () => {
     queryKey: ['doctors'],
     queryFn: async () => {
       const { data } = await supabase.from('doctors').select('*').eq('is_active', true).limit(8);
+      return data || [];
+    },
+  });
+
+  const { data: announcements } = useQuery({
+    queryKey: ['announcements-home'],
+    queryFn: async () => {
+      const { data } = await supabase.from('announcements').select('*').eq('is_active', true).order('priority', { ascending: false }).order('created_at', { ascending: false }).limit(6);
       return data || [];
     },
   });
@@ -134,8 +142,67 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* News & Announcements */}
+      {announcements && announcements.length > 0 && (
+        <section className="section-padding gradient-subtle">
+          <div className="container mx-auto px-4">
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-12">
+              <span className="text-primary text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                <Megaphone className="w-4 h-4" />
+                {lang === 'ar' ? 'آخر الأخبار' : 'Latest News'}
+              </span>
+              <h2 className="text-3xl lg:text-4xl font-black text-foreground mt-2 mb-3">
+                {lang === 'ar' ? 'أخبار وإعلانات المستشفى' : 'Hospital News & Announcements'}
+              </h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                {lang === 'ar' ? 'تابع آخر المستجدات والأخبار من المستشفى الأهلي' : 'Stay updated with the latest news from Al-Ahli Hospital'}
+              </p>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {announcements.map((ann, i) => (
+                <motion.div
+                  key={ann.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-elevated transition-all duration-300 group hover:-translate-y-1"
+                >
+                  {ann.image_url ? (
+                    <div className="h-48 overflow-hidden">
+                      <img
+                        src={ann.image_url}
+                        alt={lang === 'ar' ? ann.title_ar : ann.title_en}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-48 gradient-hero flex items-center justify-center">
+                      <Megaphone className="w-12 h-12 text-primary-foreground/30" />
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(ann.created_at).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-foreground text-[15px] mb-2 leading-snug line-clamp-2">
+                      {lang === 'ar' ? ann.title_ar : (ann.title_en || ann.title_ar)}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                      {lang === 'ar' ? ann.content_ar : (ann.content_en || ann.content_ar)}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Departments */}
-      <section className="section-padding gradient-subtle">
+      <section className={`section-padding ${!(announcements && announcements.length > 0) ? 'gradient-subtle' : ''}`}>
         <div className="container mx-auto px-4">
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-12">
             <span className="text-primary text-xs font-bold uppercase tracking-widest">{lang === 'ar' ? 'أقسامنا' : 'Our Departments'}</span>
@@ -143,7 +210,7 @@ const HomePage = () => {
             <p className="text-muted-foreground max-w-md mx-auto">{t('departments.subtitle')}</p>
           </motion.div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {deptList.map((dept, i) => (
+            {deptList.map((dept: any, i: number) => (
               <motion.div
                 key={dept.id || i}
                 initial={{ opacity: 0, y: 20 }}
@@ -153,8 +220,14 @@ const HomePage = () => {
                 className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-elevated transition-all duration-300 group hover:-translate-y-1"
               >
                 <div className="h-36 gradient-hero flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,hsl(158_65%_36%/0.4),transparent_70%)]" />
-                  <Building2 className="w-10 h-10 text-primary-foreground/40 group-hover:scale-110 transition-transform relative z-10" />
+                  {dept.image_url ? (
+                    <img src={dept.image_url} alt={dept.name_ar} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,hsl(158_65%_36%/0.4),transparent_70%)]" />
+                      <Building2 className="w-10 h-10 text-primary-foreground/40 group-hover:scale-110 transition-transform relative z-10" />
+                    </>
+                  )}
                 </div>
                 <div className="p-5">
                   <h3 className="font-bold text-foreground mb-1.5 text-[15px]">
@@ -184,7 +257,7 @@ const HomePage = () => {
             <p className="text-muted-foreground max-w-md mx-auto">{t('doctors.subtitle')}</p>
           </motion.div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-            {docList.map((doc, i) => (
+            {docList.map((doc: any, i: number) => (
               <motion.div
                 key={doc.id || i}
                 initial={{ opacity: 0, y: 20 }}
@@ -193,11 +266,17 @@ const HomePage = () => {
                 transition={{ delay: i * 0.06 }}
                 className="bg-card rounded-2xl border border-border p-5 text-center hover:shadow-elevated transition-all duration-300 group hover:-translate-y-1"
               >
-                <div className="w-16 h-16 rounded-2xl gradient-hero mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
-                  <span className="text-primary-foreground font-black text-lg">
-                    {doc.name_ar.charAt(doc.name_ar.indexOf('.') + 1) || doc.name_ar.charAt(0)}
-                  </span>
-                </div>
+                {doc.image_url ? (
+                  <div className="w-20 h-20 rounded-2xl mx-auto mb-4 overflow-hidden shadow-glow group-hover:scale-105 transition-transform">
+                    <img src={doc.image_url} alt={doc.name_ar} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-2xl gradient-hero mx-auto mb-4 flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
+                    <span className="text-primary-foreground font-black text-lg">
+                      {doc.name_ar.charAt(doc.name_ar.indexOf('.') + 1) || doc.name_ar.charAt(0)}
+                    </span>
+                  </div>
+                )}
                 <h3 className="font-bold text-foreground text-[13px] mb-1 leading-snug">{doc.name_ar}</h3>
                 <p className="text-xs text-primary font-semibold">{doc.specialty_ar}</p>
               </motion.div>
