@@ -19,7 +19,10 @@ departments, doctors, services, appointments, lab_tests, invoices, invoice_items
 - Roles in separate `user_roles` table (admin/patient)
 - Auto-create profile + patient role on signup
 - Default data shown when DB is empty (fallback)
-- Hospital data from https://ahli.org/ar/
+- Hospital data from https://ahli.org/ar/ (scraped and embedded in system prompt)
 - Chatbot restricted to hospital-only questions
 - Chatbot reads announcements table for news context
+- Chatbot supports direct doctor booking by name (skips department selection)
+- Homepage shows announcements with images from DB
 - Image upload via hospital-uploads storage bucket
+- Full doctor list from ahli.org embedded in chat edge function
