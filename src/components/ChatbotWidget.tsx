@@ -23,7 +23,7 @@ interface BookingState {
   date?: string;
   time?: string;
   departments?: { id: string; name_ar: string; name_en: string }[];
-  doctors?: { id: string; name_ar: string; name_en: string; specialty_ar: string; specialty_en: string }[];
+  doctors?: { id: string; name_ar: string; name_en: string; specialty_ar: string; specialty_en: string; department_id?: string }[];
   availableSlots?: string[];
 }
 
@@ -50,7 +50,18 @@ const ChatbotWidget = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, booking]);
 
-  const startBooking = async () => {
+  // Try to find a doctor by name from text
+  const findDoctorByName = (text: string, allDoctors: any[]) => {
+    const normalized = text.replace(/د\.|دكتور|doctor|dr\.?/gi, '').trim().toLowerCase();
+    return allDoctors.find(doc => {
+      const nameAr = doc.name_ar.replace(/د\./, '').trim().toLowerCase();
+      const nameEn = (doc.name_en || '').replace(/dr\.?/i, '').trim().toLowerCase();
+      return nameAr.includes(normalized) || normalized.includes(nameAr) ||
+        (nameEn && (nameEn.includes(normalized) || normalized.includes(nameEn)));
+    });
+  };
+
+  const startBooking = async (doctorName?: string) => {
     if (!user) {
       setMessages(prev => [...prev,
         { role: 'user', content: lang === 'ar' ? 'أريد حجز موعد' : 'I want to book an appointment' },
@@ -59,15 +70,44 @@ const ChatbotWidget = () => {
       return;
     }
 
-    setMessages(prev => [...prev, { role: 'user', content: lang === 'ar' ? 'أريد حجز موعد' : 'I want to book an appointment' }]);
     setIsLoading(true);
 
     try {
+      // Always fetch all doctors first
       const resp = await supabase.functions.invoke('chat', {
+        body: { action: 'get_doctors' },
+      });
+      const allDoctors = resp.data?.data || [];
+
+      // If a doctor name was provided, try to match directly
+      if (doctorName && allDoctors.length > 0) {
+        const matched = findDoctorByName(doctorName, allDoctors);
+        if (matched) {
+          const name = lang === 'ar' ? matched.name_ar : (matched.name_en || matched.name_ar);
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: lang === 'ar'
+              ? `تم العثور على ${name}. اختر تاريخ الموعد:`
+              : `Found ${name}. Choose appointment date:`
+          }]);
+          setBooking({
+            step: 'select_date',
+            doctorId: matched.id,
+            doctorName: name,
+            departmentId: matched.department_id,
+            departmentName: '',
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // No direct match - show departments flow
+      const deptResp = await supabase.functions.invoke('chat', {
         body: { action: 'get_departments' },
       });
-      if (resp.data?.data) {
-        setBooking({ step: 'select_department', departments: resp.data.data });
+      if (deptResp.data?.data) {
+        setBooking({ step: 'select_department', departments: deptResp.data.data, doctors: allDoctors });
         setMessages(prev => [...prev, { role: 'assistant', content: lang === 'ar' ? 'اختر القسم الذي تريد حجز موعد فيه:' : 'Choose the department you want to book in:' }]);
       }
     } catch {
@@ -87,7 +127,6 @@ const ChatbotWidget = () => {
         body: { action: 'get_doctors', actionData: { department_id: dept.id } },
       });
       
-      // If no doctors in this department, get all doctors
       let doctors = resp.data?.data || [];
       if (doctors.length === 0) {
         const allResp = await supabase.functions.invoke('chat', {
@@ -107,13 +146,13 @@ const ChatbotWidget = () => {
     }
   };
 
-  const selectDoctor = (doc: { id: string; name_ar: string; name_en: string }) => {
+  const selectDoctor = (doc: { id: string; name_ar: string; name_en: string; department_id?: string }) => {
     const name = lang === 'ar' ? doc.name_ar : doc.name_en;
     setMessages(prev => [...prev,
       { role: 'user', content: name },
       { role: 'assistant', content: lang === 'ar' ? 'اختر تاريخ الموعد:' : 'Choose the appointment date:' },
     ]);
-    setBooking(prev => ({ ...prev, step: 'select_date', doctorId: doc.id, doctorName: name }));
+    setBooking(prev => ({ ...prev, step: 'select_date', doctorId: doc.id, doctorName: name, departmentId: doc.department_id || prev.departmentId }));
   };
 
   const selectDate = async (date: string) => {
@@ -147,8 +186,8 @@ const ChatbotWidget = () => {
     setMessages(prev => [...prev, {
       role: 'assistant',
       content: lang === 'ar'
-        ? `تأكيد الحجز:\n📋 القسم: ${booking.departmentName}\n👨‍⚕️ الطبيب: ${booking.doctorName}\n📅 التاريخ: ${booking.date}\n🕐 الوقت: ${displayTime}\n\nهل تريد تأكيد الحجز؟`
-        : `Booking confirmation:\n📋 Department: ${booking.departmentName}\n👨‍⚕️ Doctor: ${booking.doctorName}\n📅 Date: ${booking.date}\n🕐 Time: ${displayTime}\n\nDo you want to confirm?`,
+        ? `تأكيد الحجز:\n👨‍⚕️ الطبيب: ${booking.doctorName}\n📅 التاريخ: ${booking.date}\n🕐 الوقت: ${displayTime}\n\nهل تريد تأكيد الحجز؟`
+        : `Booking confirmation:\n👨‍⚕️ Doctor: ${booking.doctorName}\n📅 Date: ${booking.date}\n🕐 Time: ${displayTime}\n\nDo you want to confirm?`,
     }]);
   };
 
@@ -190,13 +229,33 @@ const ChatbotWidget = () => {
     if (!text.trim()) return;
 
     if (text === '__BOOK_APPOINTMENT__') {
+      setMessages(prev => [...prev, { role: 'user', content: lang === 'ar' ? 'أريد حجز موعد' : 'I want to book an appointment' }]);
       startBooking();
       return;
     }
 
-    // Detect booking intent
+    // Detect booking intent with doctor name
+    const bookingPatterns = [
+      /(?:حجز|احجز|بدي احجز|موعد مع|بدي موعد مع)\s+(?:د\.|دكتور|الدكتور)?\s*(.+)/i,
+      /(?:book|appointment with)\s+(?:dr\.?|doctor)?\s*(.+)/i,
+    ];
+
+    for (const pattern of bookingPatterns) {
+      const match = text.match(pattern);
+      if (match && booking.step === 'idle') {
+        const doctorName = match[1].trim();
+        setMessages(prev => [...prev, { role: 'user', content: text }]);
+        setInput('');
+        startBooking(doctorName);
+        return;
+      }
+    }
+
+    // Simple booking keywords without doctor name
     const bookingKeywords = ['حجز', 'موعد', 'احجز', 'بدي احجز', 'book', 'appointment'];
     if (bookingKeywords.some(k => text.toLowerCase().includes(k)) && booking.step === 'idle') {
+      setMessages(prev => [...prev, { role: 'user', content: text }]);
+      setInput('');
       startBooking();
       return;
     }
@@ -216,8 +275,33 @@ const ChatbotWidget = () => {
 
       const context = `
 Hospital: المستشفى الأهلي - الخليل (Al-Ahli Hospital - Hebron)
-Phone: 0097022224555 | Email: info@ahli.org
+Phone: 0097022224555 | Fax: 0097222229247 | Email: info@ahli.org
 Location: Hebron, Palestine
+Emergency: 24/7
+Clinics: 8:00 AM - 3:00 PM (Sunday - Thursday)
+Website: https://ahli.org/ar/
+YouTube: https://www.youtube.com/channel/UCYhKHriquzgKoy9ZlKq36Bg
+
+## About the Hospital:
+المستشفى الأهلي هو مستشفى أهلي خيري في مدينة الخليل - فلسطين، يقدم خدمات طبية شاملة تشمل العمليات الجراحية وطب القلب والقسطرة والأطفال وحديثي الولادة والطوارئ والعناية المركزة وغيرها. يحتوي على صندوق المريض المحتاج لدعم المرضى غير القادرين.
+
+## Administrative Board:
+- أ. هدى عبد الغني عبد النبي - رئيس الجمعية
+- د. نافذ كمال ناصر الدين - نائب الرئيس
+- أ. مروان عمر شاهين - أمين السر
+- م. أيمن يوسف صادق سلطان - أمين الصندوق
+- أ. كفاح صبحي الشريف - مسؤول المشتريات والعطائات
+- أ. سعدي السراحنة - مسؤول المشاريع
+- أ. عز الدين عيسى فراح - مسؤول شؤون الموظفين
+- أ. محمد زياد عثمان الجعبري - مسؤول التطوير والجودة والتخطيط
+- أ. موسى محمد عوني البكري - مسؤول العلاقات العامة
+
+## Medical Departments:
+مركز الأهلي للقلب والشرايين، قسم الأطفال وحديثي الولادة، قسم العيادات الخارجية، قسم الأشعة والأشعة التداخلية، قسم الإسعاف والطوارئ، قسم الطب النووي، قسم العناية المركزة، قسم الجهاز الهضمي والتنظير، الأقسام الجراحية، قسم الأمراض الباطنية، قسم العمليات الجراحية، قسم النسائية والتوليد
+
+## Bank Accounts for Donations:
+- Islamic Palestinian Bank: Hebron - Palestine - 31000
+- Arab Islamic Bank: Hebron - Palestine - 19256
 
 Departments: ${depts.data?.map(d => `${d.name_ar} (${d.name_en})`).join(', ') || 'N/A'}
 
@@ -254,7 +338,7 @@ Knowledge Base: ${kb.data?.map(k => `${k.title}: ${k.content}`).join('\n') || ''
     for (let i = 1; i <= 14; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      if (d.getDay() !== 5 && d.getDay() !== 6) { // Skip Fri/Sat
+      if (d.getDay() !== 5 && d.getDay() !== 6) {
         dates.push(d.toISOString().split('T')[0]);
       }
     }
