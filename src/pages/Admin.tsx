@@ -11,11 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Building2, Stethoscope, Calendar, TestTube, FileText, MessageSquare, Plus, Trash2, LayoutDashboard, Megaphone } from 'lucide-react';
+import { Building2, Stethoscope, Calendar, TestTube, FileText, MessageSquare, Plus, Trash2, LayoutDashboard, Megaphone, BarChart3 } from 'lucide-react';
 import AdminLabTests from '@/components/admin/AdminLabTests';
 import AdminInvoicesComponent from '@/components/admin/AdminInvoices';
 import AdminAnnouncements from '@/components/admin/AdminAnnouncements';
 import ImageUpload from '@/components/admin/ImageUpload';
+import AdminStats from '@/components/admin/AdminStats';
 
 const AdminDashboard = () => {
   const { t, lang } = useI18n();
@@ -31,8 +32,9 @@ const AdminDashboard = () => {
         <h1 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
           <LayoutDashboard className="w-6 h-6" /> {t('admin.dashboard')}
         </h1>
-        <Tabs defaultValue="departments" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+        <Tabs defaultValue="stats" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
           <TabsList className="mb-6 flex-wrap">
+            <TabsTrigger value="stats" className="gap-1"><BarChart3 className="w-4 h-4" />{lang === 'ar' ? 'الإحصائيات' : 'Statistics'}</TabsTrigger>
             <TabsTrigger value="departments" className="gap-1"><Building2 className="w-4 h-4" />{t('admin.manageDepartments')}</TabsTrigger>
             <TabsTrigger value="doctors" className="gap-1"><Stethoscope className="w-4 h-4" />{t('admin.manageDoctors')}</TabsTrigger>
             <TabsTrigger value="appointments" className="gap-1"><Calendar className="w-4 h-4" />{t('admin.manageAppointments')}</TabsTrigger>
@@ -41,6 +43,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="announcements" className="gap-1"><Megaphone className="w-4 h-4" />{lang === 'ar' ? 'الأخبار' : 'News'}</TabsTrigger>
             <TabsTrigger value="feedback" className="gap-1"><MessageSquare className="w-4 h-4" />{t('admin.manageFeedback')}</TabsTrigger>
           </TabsList>
+          <TabsContent value="stats"><AdminStats /></TabsContent>
           <TabsContent value="departments"><AdminDepartments /></TabsContent>
           <TabsContent value="doctors"><AdminDoctors /></TabsContent>
           <TabsContent value="appointments"><AdminAppointments /></TabsContent>
@@ -137,7 +140,7 @@ const AdminDepartments = () => {
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
-        ))}
+        ))
       </div>
     </div>
   );
@@ -183,6 +186,7 @@ const AdminDoctors = () => {
       setForm({ name_ar: '', name_en: '', specialty_ar: '', specialty_en: '', department_id: '', image_url: '' });
       toast.success(lang === 'ar' ? 'تمت الإضافة' : 'Added');
     },
+    onError: () => toast.error(lang === 'ar' ? 'حدث خطأ' : 'Error'),
   });
 
   const deleteMutation = useMutation({
@@ -241,7 +245,7 @@ const AdminDoctors = () => {
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
-        ))}
+        ))
       </div>
     </div>
   );
@@ -287,7 +291,8 @@ const AdminAppointments = () => {
             </SelectContent>
           </Select>
         </div>
-      ))}
+      ))
+      }
       {!appointments?.length && <p className="text-muted-foreground text-center py-8">{lang === 'ar' ? 'لا توجد مواعيد' : 'No appointments'}</p>}
     </div>
   );
