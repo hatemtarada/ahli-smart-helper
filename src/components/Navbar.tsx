@@ -22,8 +22,11 @@ const Navbar = () => {
     { to: '/', label: t('nav.home') },
     { to: '/about', label: t('nav.about') },
     { to: '/departments', label: t('nav.departments') },
+    { to: '/clinics', label: lang === 'ar' ? 'العيادات' : 'Clinics' },
     { to: '/doctors', label: t('nav.doctors') },
     { to: '/services', label: t('nav.services') },
+    { to: '/news', label: lang === 'ar' ? 'الأخبار' : 'News' },
+    { to: '/donations', label: lang === 'ar' ? 'التبرعات' : 'Donations' },
     { to: '/contact', label: t('nav.contact') },
   ];
 
