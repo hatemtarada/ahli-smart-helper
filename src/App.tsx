@@ -17,6 +17,9 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Portal from "./pages/Portal";
 import Admin from "./pages/Admin";
+import Clinics from "./pages/Clinics";
+import News from "./pages/News";
+import Donations from "./pages/Donations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +40,9 @@ const App = () => (
                   <Route path="/departments" element={<Departments />} />
                   <Route path="/doctors" element={<Doctors />} />
                   <Route path="/services" element={<Services />} />
+                  <Route path="/clinics" element={<Clinics />} />
+                  <Route path="/news" element={<News />} />
+                  <Route path="/donations" element={<Donations />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
